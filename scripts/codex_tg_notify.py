@@ -21,14 +21,52 @@ from typing import Any
 
 BOT_TOKEN_ENV = "CODEX_TG_BOT_TOKEN"
 CHAT_ID_ENV = "CODEX_TG_CHAT_ID"
+LANG_ENV = "CODEX_NOTIFY_LANG"
 
 RATE_LIMIT_KEYS = {"rate_limits", "rateLimits", "limits", "limit_status"}
 TOKEN_COUNT_KEYS = {"token_count", "tokenCount", "tokens"}
 
-EVENT_TITLES = {
-    "stop": ("✅ Codex: задание выполнено", "задание выполнено"),
-    "permission": ("⚠️ Codex: ждёт разрешение", "ждёт подтверждение/разрешение"),
-    "test": ("🔔 Codex: тестовое уведомление", "тестовое уведомление"),
+TEXT = {
+    "en": {
+        "context": "context",
+        "daily": "Daily",
+        "event": "Event",
+        "hourly": "Hourly",
+        "limit": "limit",
+        "limit_left": "Limit left",
+        "monthly": "Monthly",
+        "permission": "permission required",
+        "project": "Project",
+        "reset_in_minutes": "in {minutes} min",
+        "stop": "task completed",
+        "test": "test notification",
+        "time": "Time",
+        "tool": "Tool",
+        "weekly": "Weekly",
+    },
+    "ru": {
+        "context": "контекст",
+        "daily": "Ежедневно",
+        "event": "Событие",
+        "hourly": "Ежечасно",
+        "limit": "лимит",
+        "limit_left": "Остаток лимита",
+        "monthly": "Ежемесячно",
+        "permission": "требуется подтверждение",
+        "project": "Проект",
+        "reset_in_minutes": "через {minutes} мин",
+        "stop": "задание выполнено",
+        "test": "тестовое уведомление",
+        "time": "Время",
+        "tool": "Инструмент",
+        "weekly": "Еженедельно",
+    },
+}
+
+EVENT_ICONS = {
+    "stop": "✅",
+    "permission": "⚠️",
+    "test": "🔔",
 }
 
 
@@ -79,6 +117,14 @@ def parse_args() -> argparse.Namespace:
         help="Telegram API timeout in seconds. Default: 10.",
     )
     return parser.parse_args()
+
+
+def choose_lang() -> str:
+    return "ru" if os.getenv(LANG_ENV, "").strip().lower() == "ru" else "en"
+
+
+def text(lang: str, key: str) -> str:
+    return TEXT.get(lang, TEXT["en"]).get(key, TEXT["en"][key])
 
 
 def eprint(message: str) -> None:
@@ -331,23 +377,24 @@ def format_percent(value: float) -> str:
     return f"{value:.0f}" if value.is_integer() else f"{value:.1f}"
 
 
-def translate_limit_label(value: Any) -> str:
+def translate_limit_label(value: Any, lang: str) -> str:
     label = sanitize_line(value, 40)
     normalized = normalize_key(label)
 
     match = re.search(r"(\d+)\s*(?:h|hr|hrs|hour|hours|час)", label, re.IGNORECASE)
     if match:
-        return f"{match.group(1)}ч"
+        suffix = "ч" if lang == "ru" else "h"
+        return f"{match.group(1)}{suffix}"
     if normalized in {"5h", "5hr", "5hrs", "5hour", "5hours", "fivehour"}:
-        return "5ч"
+        return "5ч" if lang == "ru" else "5h"
     if "weekly" in normalized or normalized in {"week", "7d", "7day", "7days"}:
-        return "Еженедельно"
+        return text(lang, "weekly")
     if "daily" in normalized or normalized in {"day", "24h", "24hour", "24hours"}:
-        return "Ежедневно"
+        return text(lang, "daily")
     if "monthly" in normalized or normalized in {"month", "30d", "30day", "30days"}:
-        return "Ежемесячно"
+        return text(lang, "monthly")
     if "hourly" in normalized:
-        return "Ежечасно"
+        return text(lang, "hourly")
     return label
 
 
@@ -373,7 +420,7 @@ def looks_like_limit_bucket(value: str | None) -> bool:
     ) or bool(re.fullmatch(r"\d+h", normalized))
 
 
-def format_reset(value: Any) -> str | None:
+def format_reset(value: Any, lang: str) -> str | None:
     if value is None:
         return None
 
@@ -385,7 +432,7 @@ def format_reset(value: Any) -> str | None:
             return datetime.fromtimestamp(parsed).strftime("%H:%M")
         if parsed > 0:
             minutes = max(1, round(parsed / 60))
-            return f"через {minutes} мин"
+            return text(lang, "reset_in_minutes").format(minutes=minutes)
 
     text = sanitize_line(value, 40)
     if not text:
@@ -408,15 +455,17 @@ def first_present(data: dict[str, Any], keys: tuple[str, ...]) -> Any | None:
     return None
 
 
-def format_limit_item(value: Any, fallback_label: str | None = None) -> str | None:
+def format_limit_item(
+    value: Any, fallback_label: str | None = None, lang: str = "en"
+) -> str | None:
     if isinstance(value, str):
         return sanitize_line(value, 180) or None
 
     if isinstance(value, (int, float)) and looks_like_limit_bucket(fallback_label):
-        return f"{translate_limit_label(fallback_label)} - {format_percent(float(value))}%"
+        return f"{translate_limit_label(fallback_label, lang)} - {format_percent(float(value))}%"
 
     if isinstance(value, list):
-        parts = [format_limit_item(item) for item in value]
+        parts = [format_limit_item(item, lang=lang) for item in value]
         return ", ".join(part for part in parts if part) or None
 
     if not isinstance(value, dict):
@@ -434,7 +483,7 @@ def format_limit_item(value: Any, fallback_label: str | None = None) -> str | No
             "description",
         ),
     )
-    label_text = translate_limit_label(label or fallback_label or "лимит")
+    label_text = translate_limit_label(label or fallback_label or text(lang, "limit"), lang)
 
     percent = pick_number(
         value,
@@ -491,7 +540,7 @@ def format_limit_item(value: Any, fallback_label: str | None = None) -> str | No
             "resetAfter",
         ),
     )
-    reset = format_reset(reset_value)
+    reset = format_reset(reset_value, lang)
 
     if percent is not None:
         result = f"{label_text} - {format_percent(percent)}%"
@@ -506,23 +555,23 @@ def format_limit_item(value: Any, fallback_label: str | None = None) -> str | No
     nested_parts: list[str] = []
     for key, nested_value in value.items():
         if normalize_key(str(key)) in {normalize_key(k) for k in RATE_LIMIT_KEYS}:
-            nested = format_limit_item(nested_value)
+            nested = format_limit_item(nested_value, lang=lang)
         else:
-            nested = format_limit_item(nested_value, str(key))
+            nested = format_limit_item(nested_value, str(key), lang=lang)
         if nested:
             nested_parts.append(nested)
     return ", ".join(nested_parts) or None
 
 
-def format_token_count(value: Any) -> str | None:
+def format_token_count(value: Any, lang: str) -> str | None:
     if isinstance(value, list):
-        parts = [format_token_count(item) for item in value]
+        parts = [format_token_count(item, lang) for item in value]
         return ", ".join(part for part in parts if part) or None
 
     if not isinstance(value, dict):
         return None
 
-    direct = format_limit_item(value, "контекст")
+    direct = format_limit_item(value, text(lang, "context"), lang)
     if direct and "%" in direct:
         return direct
 
@@ -556,13 +605,15 @@ def format_token_count(value: Any) -> str | None:
     )
 
     if remaining is not None and total and total > 0:
-        return f"контекст - {format_percent(remaining / total * 100)}%"
+        return f"{text(lang, 'context')} - {format_percent(remaining / total * 100)}%"
     if used is not None and total and total > 0:
-        return f"контекст - {format_percent(100 - used / total * 100)}%"
+        return f"{text(lang, 'context')} - {format_percent(100 - used / total * 100)}%"
     return None
 
 
-def extract_limit_summary(payload: dict[str, Any], transcript_path: Path | None) -> str | None:
+def extract_limit_summary(
+    payload: dict[str, Any], transcript_path: Path | None, lang: str
+) -> str | None:
     rate_candidates = deep_collect(payload, RATE_LIMIT_KEYS)
     token_candidates = deep_collect(payload, TOKEN_COUNT_KEYS)
 
@@ -572,12 +623,12 @@ def extract_limit_summary(payload: dict[str, Any], transcript_path: Path | None)
             token_candidates.extend(deep_collect(value, TOKEN_COUNT_KEYS))
 
     for candidate in reversed(rate_candidates):
-        formatted = format_limit_item(candidate)
+        formatted = format_limit_item(candidate, lang=lang)
         if formatted:
             return formatted
 
     for candidate in reversed(token_candidates):
-        formatted = format_token_count(candidate)
+        formatted = format_token_count(candidate, lang)
         if formatted:
             return formatted
 
@@ -607,23 +658,26 @@ def build_message(
     project: str,
     limit_summary: str | None,
     payload: dict[str, Any],
+    lang: str,
 ) -> str:
-    title, event_label = EVENT_TITLES.get(event, EVENT_TITLES["stop"])
+    normalized_event = event if event in EVENT_ICONS else "stop"
+    event_label = text(lang, normalized_event)
+    title = f"{EVENT_ICONS[normalized_event]} Codex: {event_label}"
     lines = [
         title,
         "",
-        f"Время: {datetime.now().strftime('%H:%M:%S')}",
-        f"Событие: {event_label}",
-        f"Проект: {project}",
+        f"{text(lang, 'time')}: {datetime.now().strftime('%H:%M:%S')}",
+        f"{text(lang, 'event')}: {event_label}",
+        f"{text(lang, 'project')}: {project}",
     ]
 
     if event == "permission":
         tool_name = pick_tool_name(payload)
         if tool_name:
-            lines.append(f"Инструмент: {tool_name}")
+            lines.append(f"{text(lang, 'tool')}: {tool_name}")
 
     if limit_summary:
-        lines.append(f"Остаток лимита: {limit_summary}")
+        lines.append(f"{text(lang, 'limit_left')}: {limit_summary}")
 
     return "\n".join(lines)
 
@@ -668,11 +722,12 @@ def main() -> int:
     args = parse_args()
     payload = read_stdin_json(skip=args.test)
 
+    lang = choose_lang()
     event = choose_event(args, payload)
     project = choose_project(args, payload)
     transcript_path = choose_transcript_path(args, payload)
-    limit_summary = extract_limit_summary(payload, transcript_path)
-    message = build_message(event, project, limit_summary, payload)
+    limit_summary = extract_limit_summary(payload, transcript_path, lang)
+    message = build_message(event, project, limit_summary, payload, lang)
 
     if args.dry_run:
         print(message)

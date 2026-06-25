@@ -10,6 +10,7 @@ English version: [README.md](README.md)
 - уведомлять, когда Codex ждёт подтверждение или разрешение через `PermissionRequest`;
 - показывать название проекта;
 - показывать остаток лимитов, если Codex передал `transcript_path`, а в transcript есть `token_count` или `rate_limits`.
+- отправлять уведомления на английском по умолчанию или на русском при `CODEX_NOTIFY_LANG=ru`.
 
 Проект безопасен для публичной публикации: токен бота и `chat_id` читаются только из переменных окружения.
 
@@ -28,6 +29,28 @@ English version: [README.md](README.md)
 Не используйте рабочие Telegram-боты проектов для личных уведомлений Codex. Создайте отдельного бота только для этой утилиты.
 
 Не храните токены в `hooks.json`, README, коммитах, скриншотах, логах или issue на GitHub. Используйте только переменные окружения `CODEX_TG_BOT_TOKEN` и `CODEX_TG_CHAT_ID`.
+
+## Локализация
+
+По умолчанию уведомления отправляются на английском языке.
+
+Чтобы включить русские подписи в уведомлениях, задайте:
+
+```bash
+CODEX_NOTIFY_LANG=ru
+```
+
+Windows PowerShell, постоянно для текущего пользователя:
+
+```powershell
+[Environment]::SetEnvironmentVariable("CODEX_NOTIFY_LANG", "ru", "User")
+```
+
+macOS/Linux:
+
+```bash
+export CODEX_NOTIFY_LANG=ru
+```
 
 ## Установка
 
@@ -79,11 +102,23 @@ Windows PowerShell, постоянно для текущего пользова�
 [Environment]::SetEnvironmentVariable("CODEX_TG_CHAT_ID", "your_chat_id_here", "User")
 ```
 
+Чтобы уведомления были на русском:
+
+```powershell
+[Environment]::SetEnvironmentVariable("CODEX_NOTIFY_LANG", "ru", "User")
+```
+
 macOS/Linux, только для текущего терминала:
 
 ```bash
 export CODEX_TG_BOT_TOKEN="your_bot_token_here"
 export CODEX_TG_CHAT_ID="your_chat_id_here"
+```
+
+Чтобы уведомления были на русском:
+
+```bash
+export CODEX_NOTIFY_LANG=ru
 ```
 
 Для Codex Desktop на Windows обычно удобнее использовать постоянные переменные окружения и затем перезапустить Codex.
@@ -165,6 +200,8 @@ python3 scripts/codex_tg_notify.py --test --dry-run
 ```
 
 ## Пример уведомления
+
+Для такого русскоязычного вывода нужно задать `CODEX_NOTIFY_LANG=ru`.
 
 ```text
 ✅ Codex: задание выполнено
@@ -275,7 +312,7 @@ echo "{\"tool_name\":\"Bash\"}" | python scripts/codex_tg_notify.py --event perm
 
 ```bash
 git init
-git add README.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
+git add README.md README.ru.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
 git commit -m "Initial codex telegram notifier"
 gh repo create codex-telegram-notifier --public --source=. --remote=origin --push
 ```
@@ -284,7 +321,7 @@ gh repo create codex-telegram-notifier --public --source=. --remote=origin --pus
 
 ```bash
 git init
-git add README.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
+git add README.md README.ru.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
 git commit -m "Initial codex telegram notifier"
 git branch -M main
 git remote add origin https://github.com/<your-github-username>/codex-telegram-notifier.git

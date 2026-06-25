@@ -10,6 +10,7 @@ It can notify you when:
 - Codex waits for approval or permission through the `PermissionRequest` hook event;
 - a notification should include the current project name;
 - Codex provides limit data in `transcript_path` through `token_count` or `rate_limits`.
+- you want English notifications by default, or Russian notifications with `CODEX_NOTIFY_LANG=ru`.
 
 The project is safe to publish publicly: the Telegram bot token and `chat_id` are read only from environment variables.
 
@@ -28,6 +29,28 @@ Treat `chat_id` as private information too. It identifies where the bot sends me
 Do not use a production Telegram bot from another project for personal Codex notifications. Create a separate bot just for this utility.
 
 Do not store tokens in `hooks.json`, README files, commits, screenshots, logs, or GitHub issues. Use only the `CODEX_TG_BOT_TOKEN` and `CODEX_TG_CHAT_ID` environment variables.
+
+## Localization
+
+Default notification language is English.
+
+To use Russian labels, set:
+
+```bash
+CODEX_NOTIFY_LANG=ru
+```
+
+For example, on Windows PowerShell:
+
+```powershell
+[Environment]::SetEnvironmentVariable("CODEX_NOTIFY_LANG", "ru", "User")
+```
+
+On macOS/Linux:
+
+```bash
+export CODEX_NOTIFY_LANG=ru
+```
 
 ## Installation
 
@@ -79,11 +102,23 @@ Windows PowerShell, permanently for the current user:
 [Environment]::SetEnvironmentVariable("CODEX_TG_CHAT_ID", "your_chat_id_here", "User")
 ```
 
+Optional Russian notification labels:
+
+```powershell
+[Environment]::SetEnvironmentVariable("CODEX_NOTIFY_LANG", "ru", "User")
+```
+
 macOS/Linux, current terminal only:
 
 ```bash
 export CODEX_TG_BOT_TOKEN="your_bot_token_here"
 export CODEX_TG_CHAT_ID="your_chat_id_here"
+```
+
+Optional Russian notification labels:
+
+```bash
+export CODEX_NOTIFY_LANG=ru
 ```
 
 For Codex Desktop on Windows, permanent user environment variables are usually the most convenient option. Restart Codex after setting them.
@@ -166,18 +201,18 @@ python3 scripts/codex_tg_notify.py --test --dry-run
 
 ## Example Notification
 
-The script currently uses Russian notification labels by default:
+Default English output:
 
 ```text
-✅ Codex: задание выполнено
+✅ Codex: task completed
 
-Время: 20:14:35
-Событие: задание выполнено
-Проект: my-project
-Остаток лимита: 5ч - 18% 18:08, Еженедельно - 5%
+Time: 20:14:35
+Event: task completed
+Project: my-project
+Limit left: 5h - 18% 18:08, Weekly - 5%
 ```
 
-If Codex does not provide limit data, the `Остаток лимита` line is omitted.
+If Codex does not provide limit data, the `Limit left` line is omitted.
 
 ## How It Works
 
