@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.codex/codex_tg_notify.py --event stop",
+            "commandWindows": "py -3 \"%USERPROFILE%\\.codex\\codex_tg_notify.py\" --event stop",
+            "timeout": 15,
+            "statusMessage": "Sending Telegram completion notification"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.codex/codex_tg_notify.py --event permission",
+            "commandWindows": "py -3 \"%USERPROFILE%\\.codex\\codex_tg_notify.py\" --event permission",
+            "timeout": 15,
+            "statusMessage": "Sending Telegram permission notification"
+          }
+        ]
+      }
+    ]
+  }
+}
