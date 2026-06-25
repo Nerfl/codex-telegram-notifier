@@ -1,55 +1,57 @@
+Русская версия: [README.ru.md](README.ru.md)
+
 # codex-telegram-notifier
 
-Мини-утилита для Codex Desktop и Codex CLI: отправляет уведомления в Telegram через Codex hooks.
+A small public-safe utility for Codex Desktop and Codex CLI. It sends Telegram notifications from Codex hooks.
 
-Что умеет:
+It can notify you when:
 
-- уведомлять, когда Codex завершил задачу через событие `Stop`;
-- уведомлять, когда Codex ждёт подтверждение или разрешение через `PermissionRequest`;
-- показывать название проекта;
-- показывать остаток лимитов, если Codex передал `transcript_path`, а в transcript есть `token_count` или `rate_limits`.
+- Codex finishes a task through the `Stop` hook event;
+- Codex waits for approval or permission through the `PermissionRequest` hook event;
+- a notification should include the current project name;
+- Codex provides limit data in `transcript_path` through `token_count` or `rate_limits`.
 
-Проект безопасен для публичной публикации: токен бота и `chat_id` читаются только из переменных окружения.
+The project is safe to publish publicly: the Telegram bot token and `chat_id` are read only from environment variables.
 
-## Файлы
+## Files
 
-- `scripts/codex_tg_notify.py` - основной скрипт без внешних зависимостей.
-- `examples/hooks.json` - пример конфигурации hooks для Codex.
-- `.gitignore` - исключает локальные env-файлы, кеши и логи.
+- `scripts/codex_tg_notify.py` - the main dependency-free Python script.
+- `examples/hooks.json` - an example Codex hooks configuration.
+- `.gitignore` - excludes local env files, caches, and logs.
 
-## Безопасность
+## Security
 
-Не публикуйте Telegram bot token. Он даёт доступ к управлению ботом.
+Never publish your Telegram bot token. A bot token allows other people to control that bot.
 
-`chat_id` тоже лучше считать приватной информацией: по нему можно понять, куда бот отправляет сообщения.
+Treat `chat_id` as private information too. It identifies where the bot sends messages.
 
-Не используйте рабочие Telegram-боты проектов для личных уведомлений Codex. Создайте отдельного бота только для этой утилиты.
+Do not use a production Telegram bot from another project for personal Codex notifications. Create a separate bot just for this utility.
 
-Не храните токены в `hooks.json`, README, коммитах, скриншотах, логах или issue на GitHub. Используйте только переменные окружения `CODEX_TG_BOT_TOKEN` и `CODEX_TG_CHAT_ID`.
+Do not store tokens in `hooks.json`, README files, commits, screenshots, logs, or GitHub issues. Use only the `CODEX_TG_BOT_TOKEN` and `CODEX_TG_CHAT_ID` environment variables.
 
-## Установка
+## Installation
 
-### 1. Создайте Telegram-бота через BotFather
+### 1. Create a Telegram bot with BotFather
 
-1. Откройте Telegram.
-2. Найдите `@BotFather`.
-3. Отправьте команду `/newbot`.
-4. Следуйте инструкциям BotFather.
-5. Сохраните token, который BotFather выдаст в конце.
+1. Open Telegram.
+2. Find `@BotFather`.
+3. Send `/newbot`.
+4. Follow BotFather's instructions.
+5. Save the token BotFather gives you.
 
-Не вставляйте token в файлы проекта.
+Do not paste the token into project files.
 
-### 2. Получите `chat_id`
+### 2. Get your `chat_id`
 
-1. Откройте чат с новым ботом.
-2. Отправьте ему любое сообщение, например `/start`.
-3. Откройте в браузере:
+1. Open a chat with your new bot.
+2. Send any message, for example `/start`.
+3. Open this URL in a browser:
 
 ```text
 https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 ```
 
-4. Найдите в ответе поле:
+4. Find the `chat.id` field in the response:
 
 ```json
 "chat": {
@@ -57,36 +59,36 @@ https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 }
 ```
 
-Значение `id` и есть `CODEX_TG_CHAT_ID`.
+The `id` value is your `CODEX_TG_CHAT_ID`.
 
-Для группового чата добавьте бота в группу, отправьте сообщение в группу и снова вызовите `getUpdates`. У групп обычно отрицательный `chat_id`.
+For a group chat, add the bot to the group, send a new message in the group, and call `getUpdates` again. Group `chat_id` values are usually negative.
 
-### 3. Сохраните переменные окружения
+### 3. Save environment variables
 
-Windows PowerShell, только для текущего окна:
+Windows PowerShell, current window only:
 
 ```powershell
 $env:CODEX_TG_BOT_TOKEN = "your_bot_token_here"
 $env:CODEX_TG_CHAT_ID = "your_chat_id_here"
 ```
 
-Windows PowerShell, постоянно для текущего пользователя:
+Windows PowerShell, permanently for the current user:
 
 ```powershell
 [Environment]::SetEnvironmentVariable("CODEX_TG_BOT_TOKEN", "your_bot_token_here", "User")
 [Environment]::SetEnvironmentVariable("CODEX_TG_CHAT_ID", "your_chat_id_here", "User")
 ```
 
-macOS/Linux, только для текущего терминала:
+macOS/Linux, current terminal only:
 
 ```bash
 export CODEX_TG_BOT_TOKEN="your_bot_token_here"
 export CODEX_TG_CHAT_ID="your_chat_id_here"
 ```
 
-Для Codex Desktop на Windows обычно удобнее использовать постоянные переменные окружения и затем перезапустить Codex.
+For Codex Desktop on Windows, permanent user environment variables are usually the most convenient option. Restart Codex after setting them.
 
-### 4. Скопируйте скрипт в `~/.codex/codex_tg_notify.py`
+### 4. Copy the script to `~/.codex/codex_tg_notify.py`
 
 Windows PowerShell:
 
@@ -103,9 +105,9 @@ cp scripts/codex_tg_notify.py ~/.codex/codex_tg_notify.py
 chmod +x ~/.codex/codex_tg_notify.py
 ```
 
-### 5. Добавьте hooks в `~/.codex/hooks.json`
+### 5. Add hooks to `~/.codex/hooks.json`
 
-Если hooks ещё нет, можно скопировать пример:
+If you do not have hooks yet, copy the example:
 
 Windows PowerShell:
 
@@ -119,30 +121,30 @@ macOS/Linux:
 cp examples/hooks.json ~/.codex/hooks.json
 ```
 
-Если `hooks.json` уже существует, не заменяйте его вслепую. Аккуратно перенесите блоки `Stop` и `PermissionRequest` из `examples/hooks.json` в существующий файл.
+If `hooks.json` already exists, do not overwrite it blindly. Copy only the `Stop` and `PermissionRequest` blocks from `examples/hooks.json` into your existing file.
 
-На Windows пример использует:
+On Windows, the example uses:
 
 ```text
 py -3 "%USERPROFILE%\.codex\codex_tg_notify.py"
 ```
 
-Если у вас нет Python Launcher `py`, замените `py -3` на `python`.
+If Python Launcher `py` is not installed, replace `py -3` with `python`.
 
-### 6. Перезапустите Codex
+### 6. Restart Codex
 
-Перезапустите Codex Desktop или откройте новую сессию Codex CLI, чтобы Codex перечитал `hooks.json` и новые переменные окружения.
+Restart Codex Desktop or start a new Codex CLI session so Codex can reload `hooks.json` and the new environment variables.
 
-### 7. Доверьте hooks
+### 7. Trust the hooks
 
-Codex требует доверять новым или изменённым command hooks.
+Codex requires you to review and trust new or changed command hooks.
 
-- В Codex Desktop откройте экран проверки hooks, если приложение попросит это сделать.
-- В Codex CLI выполните `/hooks`, просмотрите новые hooks и отметьте их как trusted.
+- In Codex Desktop, open the hooks review screen if the app asks you to.
+- In Codex CLI, run `/hooks`, review the new hooks, and mark them as trusted.
 
-Если вы измените команду hook или путь к скрипту, Codex может снова попросить доверить hook.
+If you change the hook command or script path later, Codex may ask you to trust the hook again.
 
-### 8. Проверьте тестовое уведомление
+### 8. Send a test notification
 
 Windows PowerShell:
 
@@ -156,13 +158,15 @@ macOS/Linux:
 python3 ~/.codex/codex_tg_notify.py --test --strict
 ```
 
-Без отправки в Telegram можно проверить текст сообщения:
+To test the message text without sending anything to Telegram:
 
 ```bash
 python3 scripts/codex_tg_notify.py --test --dry-run
 ```
 
-## Пример уведомления
+## Example Notification
+
+The script currently uses Russian notification labels by default:
 
 ```text
 ✅ Codex: задание выполнено
@@ -173,62 +177,62 @@ python3 scripts/codex_tg_notify.py --test --dry-run
 Остаток лимита: 5ч - 18% 18:08, Еженедельно - 5%
 ```
 
-Если Codex не передал данные о лимитах, строка `Остаток лимита` не показывается.
+If Codex does not provide limit data, the `Остаток лимита` line is omitted.
 
-## Как это работает
+## How It Works
 
-Codex запускает command hook и передаёт JSON-событие в stdin, когда это доступно. Скрипт:
+Codex runs a command hook and, when available, passes the hook event JSON through stdin. The script:
 
-1. читает hook payload из stdin;
-2. определяет событие: `Stop`, `PermissionRequest` или тест;
-3. определяет имя проекта из payload, переменной `CODEX_PROJECT_NAME` или текущей папки;
-4. если есть `transcript_path`, читает transcript и ищет `rate_limits` или `token_count`;
-5. отправляет короткое текстовое сообщение в Telegram.
+1. reads the hook payload from stdin;
+2. detects the event: `Stop`, `PermissionRequest`, or test;
+3. detects the project name from the payload, `CODEX_PROJECT_NAME`, or the current directory;
+4. reads `transcript_path`, if provided, and searches for `rate_limits` or `token_count`;
+5. sends a short text message to Telegram.
 
-Ошибки отправки не ломают работу Codex по умолчанию. Для ручной проверки используйте `--strict`, чтобы получить ненулевой код выхода при ошибке.
+By default, Telegram send errors do not break Codex. For manual checks, use `--strict` to return a non-zero exit code on errors.
 
 ## Troubleshooting
 
-### `getUpdates` возвращает `result: []`
+### `getUpdates` returns `result: []`
 
-Сначала отправьте сообщение боту в Telegram, например `/start`, и повторите запрос `getUpdates`.
+Send a message to the bot first, for example `/start`, and then call `getUpdates` again.
 
-Проверьте, что используете token именно этого бота. Для группы убедитесь, что бот добавлен в группу и в группе было новое сообщение после добавления бота.
+Make sure you are using the token for the same bot. For a group chat, make sure the bot is added to the group and that a new group message was sent after the bot was added.
 
-Если бот уже получал старые updates, Telegram мог их отметить как прочитанные. Отправьте новое сообщение и повторите запрос.
+If the bot already received older updates, Telegram may have marked them as read. Send a new message and retry the request.
 
-### PowerShell зависает из-за stdin
+### PowerShell hangs because of stdin
 
-Для ручной проверки используйте `--test`, он не читает hook stdin:
+For manual checks, use `--test`. It does not read hook stdin:
 
 ```powershell
 py -3 "$env:USERPROFILE\.codex\codex_tg_notify.py" --test --dry-run
 ```
 
-Если хотите вручную имитировать hook-событие, передайте пустой JSON через pipe:
+To manually simulate a hook event, pipe an empty JSON object:
 
 ```powershell
 '{}' | py -3 "$env:USERPROFILE\.codex\codex_tg_notify.py" --event stop --dry-run
 ```
 
-### Codex не отправляет уведомление, но ручной тест работает
+### Codex does not send notifications, but the manual test works
 
-Проверьте:
+Check that:
 
-- файл лежит в `~/.codex/hooks.json`;
-- JSON валидный, без комментариев и лишних запятых;
-- hooks включены в Codex;
-- hook доверен в Codex Desktop или через `/hooks` в CLI;
-- после изменения hook вы снова доверили новую версию;
-- Codex был перезапущен после добавления переменных окружения;
-- на Windows команда `commandWindows` запускается вручную;
-- если используется Desktop, переменные окружения заданы постоянно для пользователя, а не только в одном окне PowerShell.
+- the file is located at `~/.codex/hooks.json`;
+- the JSON is valid, with no comments or trailing commas;
+- hooks are enabled in Codex;
+- the hook is trusted in Codex Desktop or through `/hooks` in CLI;
+- after changing the hook, you trusted the new version again;
+- Codex was restarted after you added environment variables;
+- on Windows, the `commandWindows` command works when run manually;
+- if you use Codex Desktop, the environment variables are permanent user variables, not variables set only in one PowerShell window.
 
-### `hooks.json` не читается из-за лишних полей
+### `hooks.json` is not read because of extra fields
 
-Файл должен быть строгим JSON. Не добавляйте комментарии, trailing commas или произвольные верхнеуровневые поля.
+The file must be strict JSON. Do not add comments, trailing commas, or arbitrary top-level fields.
 
-Минимальная форма:
+Minimal valid shape:
 
 ```json
 {
@@ -238,17 +242,17 @@ py -3 "$env:USERPROFILE\.codex\codex_tg_notify.py" --test --dry-run
 }
 ```
 
-Сравните свой файл с `examples/hooks.json`.
+Compare your file with `examples/hooks.json`.
 
-### Лимиты не отображаются
+### Limits are not shown
 
-Строка `Остаток лимита` появляется только если Codex передал `transcript_path`, а в transcript есть понятные поля `rate_limits` или `token_count`.
+The limit line is shown only when Codex provides `transcript_path` and the transcript contains recognizable `rate_limits` or `token_count` fields.
 
-Если Codex не передал `transcript_path`, transcript недоступен, или в нём нет `token_count`, скрипт просто отправит уведомление без лимитов.
+If Codex does not provide `transcript_path`, the transcript is unavailable, or there is no `token_count`, the script sends the notification without limit data.
 
-## Разработка
+## Development
 
-Проверка синтаксиса:
+Syntax and JSON checks:
 
 ```bash
 python -m py_compile scripts/codex_tg_notify.py
@@ -261,28 +265,28 @@ Dry-run:
 python scripts/codex_tg_notify.py --test --dry-run
 ```
 
-Имитация permission request:
+Simulate a permission request:
 
 ```bash
 echo "{\"tool_name\":\"Bash\"}" | python scripts/codex_tg_notify.py --event permission --dry-run
 ```
 
-## Первый коммит и публикация на GitHub
+## First Commit And GitHub Publishing
 
-Через GitHub CLI:
+With GitHub CLI:
 
 ```bash
 git init
-git add README.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
+git add README.md README.ru.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
 git commit -m "Initial codex telegram notifier"
 gh repo create codex-telegram-notifier --public --source=. --remote=origin --push
 ```
 
-Без GitHub CLI:
+Without GitHub CLI:
 
 ```bash
 git init
-git add README.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
+git add README.md README.ru.md .gitignore scripts/codex_tg_notify.py examples/hooks.json
 git commit -m "Initial codex telegram notifier"
 git branch -M main
 git remote add origin https://github.com/<your-github-username>/codex-telegram-notifier.git
